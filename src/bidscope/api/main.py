@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import FastAPI, HTTPException, status
 
 from bidscope.application.run_service import RunNotFound, RunRepository, RunService
-from bidscope.domain.runs import Run, RunCreate, RunEvent, RunStatus
+from bidscope.domain.runs import Run, RunCreate, RunEvent
 
 app = FastAPI(title="BidScope API", version="0.1.0")
 run_service = RunService(RunRepository())
@@ -35,14 +35,3 @@ async def get_run_events(run_id: UUID) -> list[RunEvent]:
         return list(run_service.events(run_id))
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
-
-
-@app.post("/api/v1/runs/{run_id}/transition/{target}", response_model=Run, tags=["internal"])
-async def transition_run(run_id: UUID, target: RunStatus) -> Run:
-    """Temporary control-plane endpoint; protect it before exposing a worker API."""
-    try:
-        return run_service.transition(run_id, target)
-    except RunNotFound as exc:
-        raise HTTPException(status_code=404, detail="run not found") from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
